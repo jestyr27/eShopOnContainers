@@ -58,7 +58,7 @@ ENV APP_HOME=/app
 WORKDIR $APP_HOME
 COPY --from=publish /app .
 
-RUN adduser -u 2000 -G root -D blue \
+RUN adduser --uid 2000 --ingroup root --disabled-login blue \
 && chown -R 2000:0 $APP_HOME \
 && chmod -R u+x $APP_HOME
 

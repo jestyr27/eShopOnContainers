@@ -1,9 +1,11 @@
 FROM mcr.microsoft.com/dotnet/aspnet:5.0 AS base
-WORKDIR /app
+ENV APP_HOME=/app
+WORKDIR $APP_HOME
 EXPOSE 80
 
 FROM mcr.microsoft.com/dotnet/sdk:5.0 AS build
-WORKDIR /src
+ENV SRC_HOME=/src
+WORKDIR $SRC_HOME
 
 # It's important to keep lines from here down to "COPY . ." identical in all Dockerfiles
 # to take advantage of Docker's build cache, to speed up local container builds
@@ -45,13 +47,19 @@ COPY "NuGet.config" "NuGet.config"
 
 RUN dotnet restore "eShopOnContainers-ServicesAndWebApps.sln"
 COPY . .
-WORKDIR /src/Web/WebStatus
+WORKDIR $SRC_HOME/Web/WebStatus
 RUN dotnet publish --no-restore -c Release -o /app
 
 FROM build AS publish
 
 FROM base AS final
-WORKDIR /app
-COPY --from=publish /app .
+ENV APP_HOME=/app
+WORKDIR $APP_HOME
+COPY --from=publish $APP_HOME .
+
+RUN adduser --uid 2000 --ingroup root --disabled-login blue \
+&& chown -R 2000:0 $APP_HOME \
+&& chmod -R u+x $APP_HOME
+
 ENTRYPOINT ["dotnet", "WebStatus.dll"]
 
